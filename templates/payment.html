@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>project</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <style type="text/css">
+    .valid {
+      visibility: hidden;
+    }
+
+    .invalid {
+      visibility: visible;
+      color: red;
+      font-size: 14px;
+    
+    }
+  </style>
+</head>
+
+<body onload="displayUser();">
+  <nav class="navbar navbar-fixed navbar-expand-sm bg-primary fixed-top">
+    <div class="container-fluid">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link text-white" href="http://localhost:5000/chome">HOME</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-white" href="http://localhost:5000/services">SERVICE</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-white" href="http://localhost:5000/booking">BOOKING</a>
+        </li>
+
+      </ul>
+      <div class="row-0">
+        <div class="col-12"></div>
+        <div class="col-0">
+          <span class="h5" id="uname"></span>
+        <button class="btn btn-danger" type="submit" onclick="logout();">LOGOUT</button>
+         </div>
+        </div>
+    </div>
+  </nav>
+  <br />
+  <br />
+  </br>
+  <h3 class="text-center"><b>KATTIKERI GARDEN</b></h3>
+  <br>
+  <h3 class="text-center bg-white text-dark"><b> MAKE PAYMENT</b></h3></br>
+
+  <div class="container-fluid mt-3">
+    <div class="row-0">
+      <div class="col-4"></div>
+      <div class="col-4">
+
+        <img src={{ url_for('static',filename='qrcode.jpg' ) }} height="500px" width="500px" alt=""
+          style="margin-left: 400px;">
+      </div>
+      <div class="col-4"></div>
+    </div>
+  </div>
+  </div>
+  <br><br>
+  <div class="row">
+    <div class="col-4"></div>
+    <div class="col-4">
+      <form id="screnshotupload" onsubmit="checkformvalid(event);" enctype="multipart/form-data">
+      <label style="font-size: larger;">Date :</label>
+      <input type="date" name="date" id="date" placeholder="enter the date you wanted to visit" required onblur="requiredValidation(event.target.id);" /><br></br>
+      
+      <span class="valid" id="vedate">Please enter date</span>
+      <span class="valid" id="vrdate">Please enter valid date</span></br>
+      <label for="file" style="font-size: larger;">Upload file :</label>
+      <input type="file" id="file" name="file" placeholder="upload the payment file"  accept="image/png, image/gif, image/jpeg" required onblur="requiredvalidation(event.target.id); "><br><br>      
+      <span class="valid" id="vefile">Please upload the payment file</span></br>
+      <button type="submit" class="btn btn-primary">Book ticket</button>
+    </div>
+  </form>
+</body>
+
+</html>
+<script>
+  var date=new Date();
+  var tdate=date.getDate();
+  var month=date.getMonth() + 1;
+  if(tdate<10){
+    tdate='0'+tdate;
+  }
+  if(month < 10){
+    month="0" +month;
+  }
+  var year=date.getUTCFullYear();
+  var minDate=year+"-"+month+"-"+tdate;
+  document.getElementById("date").setAttribute('min',minDate)
+  console.log(month);
+
+
+
+  function requiredValidation(id) {
+    let flag = false;
+    let value = document.getElementById(id).value;
+    if (value.trim().length == 0) {
+      document.getElementById("ve" + id).classList.replace("valid", "invalid");
+      flag = false;
+    }
+    else {
+      document.getElementById("ve" + id).classList.replace("invalid", "valid");
+      flag = true;
+    }
+    return flag;
+  }
+  function regularExpressionValidation(id) {
+    let flag = false;
+    let value = document.getElementById(id).value;
+    let p = document.getElementById(id).pattern;
+    let r = new RegExp(p);
+    if (r.test(value) == false) {
+      document.getElementById("vr" + id).classList.replace("valid", "invalid");
+      flag = false;
+    }
+    else {
+      document.getElementById("vr" + id).classList.replace("invalid", "valid");
+      flag = true;
+    }
+    return flag;
+  }
+  function validateField(id) {
+    let flag = false;
+    if (requiredValidation(id) && regularExpressionValidation(id)) {
+
+      flag = true;
+    }
+    else {
+
+      flag = false;
+    }
+    return flag;
+  }
+  function checkformvalid(event)
+                {
+                    event.preventDefault();
+                    let flag=true;
+                    let elements=document.getElementsByClassName("form-control");
+                    for(let i=0;i<elements.length;i++)
+                    {
+                        let id=elements.item(i).id;
+                        if(!validateField(id))
+                        {
+                         flag=false;
+                         break;
+                        }
+                    }
+                    if(flag==false)
+                    alert("Your form is not yet validated");
+                    else
+                    {
+                      uploadscrenshot();
+                
+                    }
+                    return flag;
+                  }
+                  async function uploadscrenshot()
+{
+    
+    let form=document.getElementById("screnshotupload");
+    let formData=new FormData(form);
+    let response=await fetch("http://localhost:5000/api/upload",{
+        method:"post",
+        body:formData
+    });
+    if(response.status==200)
+    {
+        let data=await response.json();
+        if(data.msg=="success")
+        {
+            alert("screnshot uploaded successfully")
+            let filename=data["filename"];
+            let bdate=document.getElementById("date").value;
+            let amt=parseInt(sessionStorage["totalamt"])+parseInt(sessionStorage["entrance"]);
+            let formData=new FormData();
+            formData.append("bdate",bdate);
+            formData.append("filename",filename);
+            formData.append("tamt",amt);
+            formData.append("totalpeople",sessionStorage["totalpeople"]);
+            formData.append("entrance",sessionStorage["entrance"]);
+            formData.append("cid",sessionStorage["uname"])
+            let x=sessionStorage["cservices"];
+            let cservices=JSON.parse(x);
+            let sids="";
+            let speople="";
+            let samt="";
+            for(let c of cservices)
+            {
+                sids=sids+c.id+",";
+                speople=speople+c.noofpeople+",";
+                samt=samt+c.amt+",";
+            }
+            formData.append("sids",sids);
+            formData.append("speople",speople);
+            formData.append("samt",samt);
+            let response1=await fetch("http://localhost:5000/api/bookservice",{
+              method:"post",
+              body:formData
+            })
+            if(response1.status==200)
+            {
+              let data1=await response1.json();
+              alert(data1["msg"]);
+              form.reset();
+            }
+        }
+        else{
+            alert("error in uploading screnshot")
+        }
+    }
+}
+
+
+
+
+  function displayUser()
+  {
+    alert(sessionStorage["uname"])
+    if(sessionStorage["uname"]==null)
+    {
+      location.href="http://localhost:5000/";
+    }
+    else{
+      document.getElementById("uname").innerHTML=sessionStorage["uname"];
+    }
+  }
+  function logout() {
+    sessionStorage.clear();
+    location.href = "http://localhost:5000/login";
+  }
+</script>
+
